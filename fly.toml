@@ -1,22 +1,32 @@
-app = "qusis-library-backend" # FIXME: 事前に作成した一意なアプリ名に変更してください
-primary_region = "nrt"
+# fly.toml app configuration file generated for qusis-library-backend-agile-silence-8471 on 2026-05-11T05:57:47+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'qusis-library-backend-agile-silence-8471'
+primary_region = 'nrt'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8000"
-  DATABASE_URL = "sqlite:////data/books.db"
-  # SLACK_WEBHOOK_URL は fly secrets set SLACK_WEBHOOK_URL="..." で設定してください
+  DATABASE_URL = 'sqlite:////data/books.db'
+  PORT = '8000'
 
-[mounts]
-  source = "sqlite_data"
-  destination = "/data"
+[[mounts]]
+  source = 'sqlite_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8000
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
-  processes = ["app"]
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
