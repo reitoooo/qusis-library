@@ -1,0 +1,171 @@
+import { useState } from 'react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { getApiUrl } from '../api';
+
+export default function MyPage() {
+  const [studentId, setStudentId] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPinChange, setShowPinChange] = useState(false);
+  const [newPin, setNewPin] = useState('');
+
+  const fetchLogs = async (e) => {
+    e.preventDefault();
+    if (!studentId || !pinCode) return setError("学籍番号とPINコードを入力してください");
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(getApiUrl(`/api/users/${studentId.toUpperCase()}/lending-logs?pin_code=${pinCode}`));
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+        setSearched(true);
+      } else {
+        const data = await res.json();
+        throw new Error(data.detail || "エラーが発生しました");
+      }
+    } catch(err) {
+      setError(err.message);
+      setSearched(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePin = async (e) => {
+    e.preventDefault();
+    if (newPin.length !== 4) return setError("新しいPINは4桁の数字にしてください");
+    setLoading(true);
+    setError('');
+    
+    try {
+      const res = await fetch(getApiUrl(`/api/users/${studentId.toUpperCase()}/change-pin`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_pin: pinCode, new_pin: newPin })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "PIN変更に失敗しました");
+      
+      setSuccess("PINコードを変更しました");
+      setPinCode(newPin);
+      setNewPin('');
+      setShowPinChange(false);
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in">
+      <div className="flex items-center gap-4">
+        <Link to="/" className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-gray-300 md:hidden">
+          <ArrowLeft size={24} />
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold text-gradient">マイページ</h1>
+          <p className="text-gray-400 font-medium mt-1">現在の貸出状況と過去のインプット履歴</p>
+        </div>
+      </div>
+      
+      {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm mb-4">{error}</div>}
+      {success && <div className="p-4 bg-primary/10 border border-primary/20 text-primary rounded-xl text-sm mb-4">{success}</div>}
+
+      <form onSubmit={fetchLogs} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <input 
+          required
+          type="text" 
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          placeholder="学籍番号 (例: 1XX23456X)" 
+          className="flex-1 w-full p-3 sm:p-4 glass-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none text-base sm:text-lg tracking-wider"
+        />
+        <input 
+          required
+          type="password" 
+          inputMode="numeric"
+          maxLength={4}
+          value={pinCode}
+          onChange={(e) => setPinCode(e.target.value)}
+          placeholder="PIN (初期: 0000)" 
+          className="w-full sm:w-40 p-3 sm:p-4 glass-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none text-base sm:text-lg tracking-widest text-center"
+        />
+        <button type="submit" disabled={loading} className="w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 bg-primary text-gray-900 font-extrabold rounded-xl hover:bg-primary-hover flex items-center justify-center shrink-0 transition-all hover:shadow-[0_0_15px_rgba(108,210,209,0.3)] disabled:opacity-50">
+          {loading ? <Loader2 className="animate-spin" size={24}/> : '表示'}
+        </button>
+      </form>
+
+      {searched && !showPinChange && (
+        <div className="flex justify-end">
+          <button onClick={() => setShowPinChange(true)} className="text-sm text-gray-400 hover:text-white transition-colors underline underline-offset-4">PINコードを変更する</button>
+        </div>
+      )}
+
+      {showPinChange && (
+        <form onSubmit={handleChangePin} className="glass-panel p-6 rounded-2xl animate-in slide-in-from-top-2">
+          <h3 className="font-bold text-white mb-4">新しいPINコードの設定</h3>
+          <div className="flex gap-3">
+            <input 
+              required
+              type="password" 
+              inputMode="numeric"
+              maxLength={4}
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value)}
+              placeholder="新しい4桁の数字" 
+              className="flex-1 p-3 glass-input rounded-xl tracking-widest text-center"
+            />
+            <button type="submit" disabled={loading} className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors border border-white/10 disabled:opacity-50">
+              変更
+            </button>
+          </div>
+          <button type="button" onClick={() => setShowPinChange(false)} className="mt-4 text-xs text-gray-400 hover:text-white w-full text-center">キャンセル</button>
+        </form>
+      )}
+
+      {searched && (
+        <div className="glass-panel p-6 rounded-2xl">
+          <h2 className="font-bold text-xl text-white mb-6">貸出・返却履歴</h2>
+          {logs.length === 0 ? (
+            <p className="text-gray-500 text-center py-8 font-medium">履歴が見つかりませんでした</p>
+          ) : (
+            <div className="space-y-4">
+              {logs.map(log => (
+                <div key={log.id} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div>
+                      <p className="font-bold text-white mb-1">ISBN: <span className="font-mono text-gray-400 font-normal">{log.book_isbn}</span></p>
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-400">
+                        <p>借入: {new Date(log.borrowed_at).toLocaleDateString()}</p>
+                        <p>期限: {new Date(log.due_date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div>
+                      {log.returned_at ? (
+                        <span className="inline-flex items-center px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full text-xs font-bold">
+                          返却済 ({new Date(log.returned_at).toLocaleDateString()})
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-xs font-bold">
+                          貸出中
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

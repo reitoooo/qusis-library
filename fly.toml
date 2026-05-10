@@ -1,0 +1,22 @@
+app = "qusis-library-backend" # FIXME: 事前に作成した一意なアプリ名に変更してください
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  DATABASE_URL = "sqlite:////data/books.db"
+  # SLACK_WEBHOOK_URL は fly secrets set SLACK_WEBHOOK_URL="..." で設定してください
+
+[mounts]
+  source = "sqlite_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]

@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6cd2d1;
+  --color-primary-hover: #5bbbc0;
+  --color-background: #0b1120;
+}
+
+body {
+  background-color: var(--color-background);
+  color: #f8fafc;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism Components */
+.glass-panel {
+  background: rgba(11, 17, 32, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(108, 210, 209, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(108, 210, 209, 0.6);
+  box-shadow: 0 0 25px rgba(108, 210, 209, 0.15);
+}
+
+.glass-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(108, 210, 209, 0.5);
+  outline: none;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #fff 0%, #6cd2d1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scanner UI Overrides */
+#reader {
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  background: rgba(0,0,0,0.2) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5) !important;
+}
+
+#reader button {
+  background-color: var(--color-primary) !important;
+  color: #0b1120 !important;
+  font-weight: 800 !important;
+  padding: 14px 28px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  font-size: 16px !important;
+  margin: 15px auto !important;
+  display: block !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+#reader button:hover {
+  background-color: #fff !important;
+  box-shadow: 0 0 20px rgba(108, 210, 209, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+#reader video {
+  max-height: 40vh !important;
+  width: 100% !important;
+  border-radius: 12px !important;
+}
+
+#reader__dashboard_section_csr span,
+#reader__dashboard_section_swaplink {
+  display: none !important;
+}
