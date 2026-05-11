@@ -1,25 +1,27 @@
 import { useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 export default function Scanner({ onScan, onError }) {
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
 
   useEffect(() => {
-    // コンポーネントのマウント時に一度だけ初期化
-    const html5QrCode = new Html5Qrcode("reader");
+    // ISBN (EAN-13) だけをスキャン対象に制限して処理速度を爆速にする
+    const html5QrCode = new Html5Qrcode("reader", {
+      formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13 ]
+    });
     scannerRef.current = html5QrCode;
 
     const startCamera = async () => {
       try {
         await html5QrCode.start(
-          { facingMode: "environment" }, // 背面カメラを強制
+          { facingMode: "environment" },
           {
-            fps: 10,
+            fps: 30, // フレームレートを上げてスキャン頻度を増やす
             qrbox: (viewfinderWidth, viewfinderHeight) => {
               return {
                 width: Math.min(viewfinderWidth * 0.9, 300),
-                height: 80 // バーコード用
+                height: 100 
               };
             }
           },
