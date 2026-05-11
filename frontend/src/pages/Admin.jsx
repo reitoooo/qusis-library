@@ -21,6 +21,11 @@ export default function Admin() {
   const [newUserSlackId, setNewUserSlackId] = useState('');
   const [csvFile, setCsvFile] = useState(null);
 
+  // Manual book form
+  const [manualIsbn, setManualIsbn] = useState('');
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualAuthor, setManualAuthor] = useState('');
+
   // Edit states
   const [editingUser, setEditingUser] = useState(null);
   const [editingBook, setEditingBook] = useState(null);
@@ -189,9 +194,37 @@ export default function Admin() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ isbn, title: '', author: '' })
       });
-      if (!res.ok) throw new Error((await res.json()).detail || "登録に失敗しました");
+      if (!res.ok) {
+        const errData = await res.json();
+        if (res.status === 404) {
+          setManualIsbn(isbn);
+          throw new Error("自動取得に失敗しました。右側のフォームから手動で登録してください。");
+        }
+        throw new Error(errData.detail || "登録に失敗しました");
+      }
       const data = await res.json();
       showMessage(`『${data.title}』を登録しました！`);
+    } catch(e) {
+      showMessage(e.message, true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualRegisterBook = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await adminFetch(getApiUrl('/api/books/'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ isbn: manualIsbn || 'NO_ISBN', title: manualTitle, author: manualAuthor })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || "登録に失敗しました");
+      showMessage(`『${manualTitle}』を手動登録しました！`);
+      setManualIsbn('');
+      setManualTitle('');
+      setManualAuthor('');
     } catch(e) {
       showMessage(e.message, true);
     } finally {
@@ -303,9 +336,24 @@ export default function Admin() {
 
           {/* --- Register Book Mode --- */}
           {mode === 'register_book' && (
-             <div className="glass-panel p-8 rounded-2xl space-y-6 text-center">
-               <h2 className="font-bold text-xl text-white">本のバーコードをスキャン</h2>
-               {!loading ? <Scanner onScan={handleScanBook} /> : <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-primary" size={40}/></div>}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="glass-panel p-8 rounded-2xl text-center flex flex-col justify-center">
+                 <h2 className="font-bold text-xl text-white mb-6">バーコードで自動登録</h2>
+                 {!loading ? <Scanner onScan={handleScanBook} /> : <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-primary" size={40}/></div>}
+               </div>
+
+               <form onSubmit={handleManualRegisterBook} className="glass-panel p-8 rounded-2xl flex flex-col justify-center space-y-4">
+                 <h2 className="font-bold text-xl text-white mb-2">手動で登録</h2>
+                 <p className="text-sm text-gray-400 mb-4">バーコードがない本や、自動取得に失敗した本はこちらから手入力で登録できます。</p>
+                 <div className="space-y-4">
+                   <input value={manualTitle} required onChange={e=>setManualTitle(e.target.value)} placeholder="タイトル (必須)" className="w-full p-3 glass-input rounded-xl" />
+                   <input value={manualAuthor} onChange={e=>setManualAuthor(e.target.value)} placeholder="著者 (任意)" className="w-full p-3 glass-input rounded-xl" />
+                   <input value={manualIsbn} onChange={e=>setManualIsbn(e.target.value)} placeholder="ISBN (任意)" className="w-full p-3 glass-input rounded-xl font-mono text-sm" />
+                 </div>
+                 <button disabled={loading} type="submit" className="w-full py-3 mt-4 bg-primary text-gray-900 font-bold rounded-xl hover:bg-primary-hover disabled:opacity-50 transition-colors">
+                   {loading ? '処理中...' : '手動登録する'}
+                 </button>
+               </form>
              </div>
           )}
 

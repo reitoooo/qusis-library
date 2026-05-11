@@ -37,7 +37,7 @@ def fetch_book_info_google(isbn: str):
     return None
 
 @router.get("/", response_model=List[schemas.Book])
-def read_books(skip: int = 0, limit: int = 100, search: str = None, db: Session = Depends(get_db)):
+def read_books(skip: int = 0, limit: int = 10000, search: str = None, db: Session = Depends(get_db)):
     query = db.query(models.Book)
     if search:
         query = query.filter(models.Book.title.contains(search) | models.Book.author.contains(search))

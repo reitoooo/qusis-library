@@ -9,7 +9,7 @@ from ..auth import verify_admin
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+def read_users(skip: int = 0, limit: int = 10000, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     users = db.query(models.User).offset(skip).limit(limit).all()
     return users
 
