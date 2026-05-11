@@ -68,15 +68,37 @@ export default function Return() {
       )}
 
       {step === 1 && (
-        <div className="space-y-6 glass-panel p-6 rounded-2xl relative">
-          <p className="text-gray-400 text-center text-sm font-medium">返却する本のバーコードをスキャンしてください</p>
-          {!loading ? (
-             <Scanner onScan={handleScan} />
-          ) : (
-             <div className="h-64 flex items-center justify-center bg-black/20 rounded-xl border border-white/5">
-                <Loader2 className="animate-spin text-primary" size={40} />
-             </div>
-          )}
+        <div className="space-y-6">
+          <div className="glass-panel p-6 rounded-2xl relative">
+            <p className="text-gray-400 text-center text-sm font-medium mb-4">返却する本のバーコードをスキャンしてください</p>
+            {!loading ? (
+               <Scanner onScan={handleScan} />
+            ) : (
+               <div className="h-64 flex items-center justify-center bg-black/20 rounded-xl border border-white/5">
+                  <Loader2 className="animate-spin text-primary" size={40} />
+               </div>
+            )}
+          </div>
+          
+          <div className="glass-panel p-6 rounded-2xl flex flex-col items-center">
+            <p className="text-gray-400 text-sm font-medium mb-4">または手動で入力</p>
+            <div className="flex w-full gap-2">
+              <input 
+                type="text" 
+                value={scannedIsbn}
+                onChange={e => setScannedIsbn(e.target.value)}
+                placeholder="ISBNを入力 (例: 978...)" 
+                className="flex-1 p-3 glass-input rounded-xl text-sm font-mono"
+              />
+              <button 
+                onClick={() => { if(scannedIsbn) submitReturn(scannedIsbn); }}
+                disabled={loading}
+                className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 disabled:opacity-50 transition-colors"
+              >
+                返却
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

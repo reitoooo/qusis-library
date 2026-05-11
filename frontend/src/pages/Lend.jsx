@@ -56,9 +56,30 @@ export default function Lend() {
       </div>
 
       {step === 1 && (
-        <div className="space-y-6 glass-panel p-6 rounded-2xl">
-          <p className="text-gray-400 text-center text-sm font-medium">裏面の上段バーコード（978~）をスキャン</p>
-          <Scanner onScan={handleScan} />
+        <div className="space-y-6">
+          <div className="glass-panel p-6 rounded-2xl">
+            <p className="text-gray-400 text-center text-sm font-medium mb-4">裏面の上段バーコード（978~）をスキャン</p>
+            <Scanner onScan={handleScan} />
+          </div>
+          
+          <div className="glass-panel p-6 rounded-2xl flex flex-col items-center">
+            <p className="text-gray-400 text-sm font-medium mb-4">または手動で入力</p>
+            <div className="flex w-full gap-2">
+              <input 
+                type="text" 
+                value={isbn}
+                onChange={e => setIsbn(e.target.value)}
+                placeholder="ISBNを入力 (例: 978...)" 
+                className="flex-1 p-3 glass-input rounded-xl text-sm font-mono"
+              />
+              <button 
+                onClick={() => { if(isbn) { setStep(2); setError(''); } }}
+                className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
