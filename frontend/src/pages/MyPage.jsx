@@ -142,7 +142,7 @@ export default function MyPage() {
                 <div key={log.id} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                     <div>
-                      <p className="font-bold text-white mb-1">ISBN: <span className="font-mono text-gray-400 font-normal">{log.book_isbn}</span></p>
+                      <p className="font-bold text-white mb-1">『{log.book.title}』 <span className="font-mono text-xs text-gray-400 font-normal ml-2">({log.book.isbn})</span></p>
                       <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-400">
                         <p>借入: {new Date(log.borrowed_at).toLocaleDateString()}</p>
                         <p>期限: {new Date(log.due_date).toLocaleDateString()}</p>

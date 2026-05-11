@@ -61,6 +61,7 @@ class LendingLog(LendingLogBase):
     due_date: datetime
     returned_at: Optional[datetime] = None
     remind_count: int
+    book: Book
 
     class Config:
         orm_mode = True
