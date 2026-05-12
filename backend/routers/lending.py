@@ -10,8 +10,20 @@ router = APIRouter(prefix="/lending", tags=["lending"])
 
 @router.post("/lend", response_model=schemas.LendingLog)
 def lend_book(log: schemas.LendingLogCreate, db: Session = Depends(get_db)):
-    # Check if book exists and is available
-    book = db.query(models.Book).filter(models.Book.isbn == log.book_isbn, models.Book.status == models.BookStatus.AVAILABLE).first()
+    # Resolve the book — prefer book_id, fall back to isbn
+    if log.book_id:
+        book = db.query(models.Book).filter(
+            models.Book.id == log.book_id,
+            models.Book.status == models.BookStatus.AVAILABLE
+        ).first()
+    elif log.book_isbn:
+        book = db.query(models.Book).filter(
+            models.Book.isbn == log.book_isbn,
+            models.Book.status == models.BookStatus.AVAILABLE
+        ).first()
+    else:
+        raise HTTPException(status_code=422, detail="book_id または book_isbn のどちらかを指定してください")
+
     if not book:
         raise HTTPException(status_code=404, detail="対象の本が見つからないか、全て貸出中です")
     
@@ -42,11 +54,20 @@ def lend_book(log: schemas.LendingLogCreate, db: Session = Depends(get_db)):
     return db_log
 
 @router.post("/return")
-def return_book(isbn: str, user_id: str = None, db: Session = Depends(get_db)):
-    active_logs = db.query(models.LendingLog).join(models.Book).filter(
-        models.Book.isbn == isbn,
-        models.LendingLog.returned_at == None
-    ).all()
+def return_book(isbn: str = None, book_id: int = None, user_id: str = None, db: Session = Depends(get_db)):
+    # Resolve by book_id first, then isbn
+    if book_id:
+        active_logs = db.query(models.LendingLog).filter(
+            models.LendingLog.book_id == book_id,
+            models.LendingLog.returned_at == None
+        ).all()
+    elif isbn:
+        active_logs = db.query(models.LendingLog).join(models.Book).filter(
+            models.Book.isbn == isbn,
+            models.LendingLog.returned_at == None
+        ).all()
+    else:
+        raise HTTPException(status_code=422, detail="book_id または isbn のどちらかを指定してください")
     
     if not active_logs:
         raise HTTPException(status_code=404, detail="この本の貸出記録が見つかりません")

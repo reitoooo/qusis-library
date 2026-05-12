@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../api';
 import { Search, ArrowUpCircle, ArrowDownCircle, Loader2, Zap } from 'lucide-react';
 
@@ -7,6 +7,7 @@ export default function Home() {
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -18,17 +19,35 @@ export default function Home() {
           setBooks(data);
         }
       } catch (err) {
-        console.error("Failed to fetch books", err);
+        console.error('Failed to fetch books', err);
       } finally {
         setLoading(false);
       }
     };
-    
+
     const timer = setTimeout(() => {
       fetchBooks();
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const goToLend = (book) => {
+    const params = new URLSearchParams({
+      book_id: book.id,
+      book_title: book.title,
+      isbn: book.isbn || '',
+    });
+    navigate(`/lend?${params.toString()}`);
+  };
+
+  const goToReturn = (book) => {
+    const params = new URLSearchParams({
+      book_id: book.id,
+      book_title: book.title,
+      isbn: book.isbn || '',
+    });
+    navigate(`/return?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -58,9 +77,9 @@ export default function Home() {
 
       <div className="glass-panel p-6 rounded-2xl">
         <div className="relative mb-6">
-          <input 
-            type="text" 
-            placeholder="書籍名や著者で検索..." 
+          <input
+            type="text"
+            placeholder="書籍名や著者で検索..."
             className="w-full pl-12 pr-4 py-4 glass-input rounded-xl text-lg font-medium"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -78,19 +97,54 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-3">
-            {books.map((book) => (
-              <div key={book.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors rounded-xl">
-                <div className="mb-3 sm:mb-0">
-                  <h3 className="font-bold text-white text-lg">{book.title}</h3>
-                  <p className="text-sm text-gray-400 mt-1">{book.author}</p>
+            {books.map((book) => {
+              const available = book.status === '貸出可能';
+              return (
+                <div
+                  key={book.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors rounded-xl gap-3"
+                >
+                  {/* Book info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-white text-base leading-snug truncate">{book.title}</h3>
+                    <p className="text-sm text-gray-400 mt-0.5 truncate">{book.author}</p>
+                  </div>
+
+                  {/* Status + action buttons */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider ${
+                        available
+                          ? 'bg-primary/20 text-primary border border-primary/30'
+                          : 'bg-gray-800 text-gray-400 border border-gray-700'
+                      }`}
+                    >
+                      {book.status}
+                    </span>
+
+                    {available ? (
+                      <button
+                        onClick={() => goToLend(book)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-bold hover:bg-primary hover:text-gray-900 transition-all"
+                        title="この本を借りる"
+                      >
+                        <ArrowUpCircle size={13} />
+                        借りる
+                      </button>
+                    ) : book.status === '貸出中' ? (
+                      <button
+                        onClick={() => goToReturn(book)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-gray-300 border border-white/10 rounded-full text-xs font-bold hover:bg-white/20 transition-all"
+                        title="この本を返却する"
+                      >
+                        <ArrowDownCircle size={13} />
+                        返す
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <div>
-                  <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-wider ${book.status === '貸出可能' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
-                    {book.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

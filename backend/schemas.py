@@ -50,7 +50,8 @@ class LendingLogBase(BaseModel):
     user_id: str
     
 class LendingLogCreate(LendingLogBase):
-    book_isbn: str
+    book_isbn: Optional[str] = None  # ISBN or 'NO_ISBN'
+    book_id: Optional[int] = None    # Alternative: directly specify book ID
     pin_code: str
     due_date: Optional[datetime] = None
 
