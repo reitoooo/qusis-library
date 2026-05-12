@@ -24,7 +24,7 @@ export default function MyPage() {
       const res = await fetch(getApiUrl(`/api/users/${studentId.toUpperCase()}/lending-logs?pin_code=${pinCode}`));
       if (res.ok) {
         const data = await res.json();
-        setLogs(data);
+        setLogs(Array.isArray(data) ? data : []);
         setSearched(true);
       } else {
         const data = await res.json();

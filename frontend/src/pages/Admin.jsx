@@ -80,11 +80,14 @@ export default function Admin() {
 
   const fetchActiveLendings = async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await adminFetch(getApiUrl('/api/lending/active'));
       const data = await res.json();
-      if(Array.isArray(data)) setActiveLendings(data);
+      if (!res.ok) throw new Error(data.detail || `サーバーエラー (${res.status})`);
+      setActiveLendings(Array.isArray(data) ? data : []);
     } catch(e) {
+      setError(`貸出状況の取得に失敗しました: ${e.message}`);
       console.error(e);
     } finally {
       setLoading(false);
