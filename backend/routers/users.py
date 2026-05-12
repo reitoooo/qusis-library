@@ -50,16 +50,36 @@ def read_user(user_id: str, db: Session = Depends(get_db), _: bool = Depends(ver
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@router.get("/{user_id}/lending-logs", response_model=List[schemas.LendingLog])
+@router.get("/{user_id}/lending-logs")
 def read_user_lending_logs(user_id: str, pin_code: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.pin_code != pin_code:
         raise HTTPException(status_code=401, detail="PINコードが間違っています")
-        
+
     logs = db.query(models.LendingLog).filter(models.LendingLog.user_id == user_id).all()
-    return logs
+
+    # Safely serialize — book may be null if the book record was deleted
+    result = []
+    for log in logs:
+        result.append({
+            "id": log.id,
+            "user_id": log.user_id,
+            "book_id": log.book_id,
+            "book": {
+                "id": log.book.id,
+                "isbn": log.book.isbn,
+                "title": log.book.title,
+                "author": log.book.author,
+                "status": log.book.status,
+            } if log.book else None,
+            "borrowed_at": log.borrowed_at.isoformat(),
+            "due_date": log.due_date.isoformat(),
+            "returned_at": log.returned_at.isoformat() if log.returned_at else None,
+            "remind_count": log.remind_count,
+        })
+    return result
 
 @router.post("/{user_id}/verify-pin")
 def verify_pin(user_id: str, payload: schemas.PinVerify, db: Session = Depends(get_db)):

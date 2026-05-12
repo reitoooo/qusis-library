@@ -5,8 +5,32 @@ from typing import List
 
 from .. import models, schemas
 from ..database import get_db
+from ..auth import verify_admin
 
 router = APIRouter(prefix="/lending", tags=["lending"])
+
+@router.get("/active")
+def get_active_lendings(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    """Return all currently active (not yet returned) lending logs."""
+    logs = db.query(models.LendingLog).filter(
+        models.LendingLog.returned_at == None
+    ).all()
+
+    result = []
+    for log in logs:
+        result.append({
+            "id": log.id,
+            "user_id": log.user_id,
+            "user_name": log.user.name if log.user else "不明",
+            "book_id": log.book_id,
+            "book_title": log.book.title if log.book else "不明",
+            "book_author": log.book.author if log.book else "",
+            "borrowed_at": log.borrowed_at.isoformat(),
+            "due_date": log.due_date.isoformat(),
+            "is_overdue": datetime.now() > log.due_date,
+        })
+
+    return result
 
 @router.post("/lend", response_model=schemas.LendingLog)
 def lend_book(log: schemas.LendingLogCreate, db: Session = Depends(get_db)):
