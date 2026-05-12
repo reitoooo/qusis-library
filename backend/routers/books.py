@@ -41,7 +41,7 @@ def read_books(skip: int = 0, limit: int = 10000, search: str = None, db: Sessio
     query = db.query(models.Book)
     if search:
         query = query.filter(models.Book.title.contains(search) | models.Book.author.contains(search))
-    books = query.offset(skip).limit(limit).all()
+    books = query.order_by(models.Book.title, models.Book.id).offset(skip).limit(limit).all()
     return books
 
 @router.post("/", response_model=schemas.Book)
