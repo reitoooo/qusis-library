@@ -27,21 +27,64 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), _: bool
 @router.post("/bulk")
 def create_users_bulk(users: List[schemas.UserCreate], db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     added_count = 0
-    skipped_count = 0
-    
+    updated_count = 0
+
     for user_data in users:
-        # Check if user already exists
         existing = db.query(models.User).filter(models.User.user_id == user_data.user_id).first()
         if existing:
-            skipped_count += 1
-            continue
-            
-        db_item = models.User(**user_data.model_dump())
-        db.add(db_item)
-        added_count += 1
-        
+            # Update only fields that differ
+            changed = False
+            if existing.name != user_data.name:
+                existing.name = user_data.name
+                changed = True
+            if user_data.notification_id is not None and existing.notification_id != user_data.notification_id:
+                existing.notification_id = user_data.notification_id
+                changed = True
+            if changed:
+                updated_count += 1
+        else:
+            db_item = models.User(**user_data.model_dump())
+            db.add(db_item)
+            added_count += 1
+
     db.commit()
-    return {"detail": f"{added_count}名のユーザーを登録し、{skipped_count}名をスキップしました。"}
+    parts = []
+    if added_count:
+        parts.append(f"{added_count}名を新規登録")
+    if updated_count:
+        parts.append(f"{updated_count}名の情報を更新")
+    if not parts:
+        parts.append("変更はありませんでした")
+    return {"detail": "、".join(parts) + "しました。", "added": added_count, "updated": updated_count}
+
+
+from typing import List as TList
+
+@router.delete("/bulk-delete")
+def delete_users_bulk(user_ids: TList[str], db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    """Delete multiple users at once. Skips users with active lending logs."""
+    deleted_count = 0
+    skipped = []
+
+    for user_id in user_ids:
+        db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
+        if not db_user:
+            continue
+        active_logs = db.query(models.LendingLog).filter(
+            models.LendingLog.user_id == user_id,
+            models.LendingLog.returned_at == None
+        ).first()
+        if active_logs:
+            skipped.append(user_id)
+            continue
+        db.delete(db_user)
+        deleted_count += 1
+
+    db.commit()
+    msg = f"{deleted_count}名を削除しました。"
+    if skipped:
+        msg += f" {len(skipped)}名は未返却の本があるためスキップしました。"
+    return {"detail": msg, "deleted": deleted_count, "skipped": skipped}
 
 @router.get("/{user_id}", response_model=schemas.User)
 def read_user(user_id: str, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
