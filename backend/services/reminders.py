@@ -39,6 +39,11 @@ def check_overdue_books():
                 send_slack_webhook(msg, webhook_url)
                 import time
                 time.sleep(1.5)
+            elif days_overdue == 0: # Today is the deadline
+                msg = f"【返却期限当日】{mention}本日が返却期限の本があります。\n本日中に部室へ返却してください。\n書名: {book.title}"
+                send_slack_webhook(msg, webhook_url)
+                import time
+                time.sleep(1.5)
             elif days_overdue > 0: # Overdue
                 msg = f"【督促通知】{mention}返却期限が過ぎている本があります！（{days_overdue}日超過）\n至急部室へ返却してください。\n書名: {book.title}"
                 send_slack_webhook(msg, webhook_url)
