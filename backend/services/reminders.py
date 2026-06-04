@@ -1,4 +1,3 @@
-from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
 from datetime import datetime
 import requests
@@ -54,8 +53,3 @@ def check_overdue_books():
     finally:
         db.close()
 
-def start_scheduler():
-    scheduler = BackgroundScheduler()
-    # Run once a day at 10:00 AM
-    scheduler.add_job(check_overdue_books, 'cron', hour=10, minute=0)
-    scheduler.start()
