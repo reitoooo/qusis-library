@@ -25,6 +25,11 @@ export default function Home() {
       }
     };
 
+    if (!search) {
+      fetchBooks();
+      return;
+    }
+
     const timer = setTimeout(() => {
       fetchBooks();
     }, 300);
