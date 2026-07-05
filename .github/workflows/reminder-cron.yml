@@ -1,0 +1,25 @@
+name: Daily Reminder Cron
+
+on:
+  schedule:
+    # 毎日 UTC 01:00 (日本時間の午前10:00) に実行
+    - cron: '0 1 * * *'
+  workflow_dispatch: # 手動実行用（テスト実行も可能）
+
+jobs:
+  ping-cron-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Check Overdue API
+        env:
+          RENDER_API_URL: ${{ secrets.RENDER_API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$RENDER_API_URL" ]; then
+            echo "Error: RENDER_API_URL is not set"
+            exit 1
+          fi
+          
+          echo "Triggering reminder cron job..."
+          curl -sS -X GET "$RENDER_API_URL/api/cron/check-overdue" \
+            -H "X-Cron-Secret: $CRON_SECRET"
