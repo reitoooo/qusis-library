@@ -4,3 +4,5 @@ sqlalchemy
 requests
 pydantic
 pydantic-settings
+psycopg2-binary
+gunicorn
