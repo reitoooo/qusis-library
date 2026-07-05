@@ -7,6 +7,9 @@ export default function Home() {
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 50;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +20,7 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           setBooks(data);
+          setHasMore(data.length === LIMIT);
         }
       } catch (err) {
         console.error('Failed to fetch books', err);
@@ -35,6 +39,25 @@ export default function Home() {
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const skip = books.length;
+      const query = search ? `?search=${encodeURIComponent(search)}&skip=${skip}` : `?skip=${skip}`;
+      const res = await fetch(getApiUrl(`/api/books/${query}`));
+      if (res.ok) {
+        const data = await res.json();
+        setBooks((prev) => [...prev, ...data]);
+        setHasMore(data.length === LIMIT);
+      }
+    } catch (err) {
+      console.error('Failed to load more books', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const goToLend = (book) => {
     const params = new URLSearchParams({
@@ -150,6 +173,19 @@ export default function Home() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {!loading && hasMore && books.length > 0 && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {loadingMore && <Loader2 className="animate-spin" size={16} />}
+              もっと見る
+            </button>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timedelta
 from typing import List
 
@@ -12,7 +12,10 @@ router = APIRouter(prefix="/lending", tags=["lending"])
 @router.get("/active")
 def get_active_lendings(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     """Return all currently active (not yet returned) lending logs."""
-    logs = db.query(models.LendingLog).filter(
+    logs = db.query(models.LendingLog).options(
+        joinedload(models.LendingLog.user),
+        joinedload(models.LendingLog.book)
+    ).filter(
         models.LendingLog.returned_at == None
     ).all()
 

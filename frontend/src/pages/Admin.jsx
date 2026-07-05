@@ -15,7 +15,12 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [hasMoreBooks, setHasMoreBooks] = useState(true);
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
+  const [loadingMoreBooks, setLoadingMoreBooks] = useState(false);
+  const LIMIT = 50;  
   // Create user form
   const [newUserId, setNewUserId] = useState('');
   const [newUserName, setNewUserName] = useState('');
@@ -77,11 +82,32 @@ export default function Admin() {
     try {
       const res = await adminFetch(getApiUrl('/api/users/'));
       const data = await res.json();
-      if(Array.isArray(data)) setUsers(data);
+      if(Array.isArray(data)) {
+        setUsers(data);
+        setHasMoreUsers(data.length === LIMIT);
+      }
     } catch(e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreUsers = async () => {
+    if (loadingMoreUsers || !hasMoreUsers) return;
+    setLoadingMoreUsers(true);
+    try {
+      const skip = users.length;
+      const res = await adminFetch(getApiUrl(`/api/users/?skip=${skip}`));
+      const data = await res.json();
+      if(Array.isArray(data)) {
+        setUsers(prev => [...prev, ...data]);
+        setHasMoreUsers(data.length === LIMIT);
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoadingMoreUsers(false);
     }
   };
 
@@ -90,11 +116,32 @@ export default function Admin() {
     try {
       const res = await adminFetch(getApiUrl('/api/books/'));
       const data = await res.json();
-      if(Array.isArray(data)) setBooks(data);
+      if(Array.isArray(data)) {
+        setBooks(data);
+        setHasMoreBooks(data.length === LIMIT);
+      }
     } catch(e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreBooks = async () => {
+    if (loadingMoreBooks || !hasMoreBooks) return;
+    setLoadingMoreBooks(true);
+    try {
+      const skip = books.length;
+      const res = await adminFetch(getApiUrl(`/api/books/?skip=${skip}`));
+      const data = await res.json();
+      if(Array.isArray(data)) {
+        setBooks(prev => [...prev, ...data]);
+        setHasMoreBooks(data.length === LIMIT);
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoadingMoreBooks(false);
     }
   };
 
@@ -541,6 +588,18 @@ export default function Admin() {
                    </tbody>
                  </table>
                </div>
+                {!loading && hasMoreBooks && books.length > 0 && (
+                  <div className="flex justify-center mt-6 pt-4">
+                    <button
+                      onClick={loadMoreBooks}
+                      disabled={loadingMoreBooks}
+                      className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {loadingMoreBooks && <Loader2 className="animate-spin" size={16} />}
+                      もっと見る
+                    </button>
+                  </div>
+                )}
              </div>
           )}
 
@@ -650,6 +709,18 @@ export default function Admin() {
                     </tbody>
                   </table>
                 </div>
+                {!loading && hasMoreUsers && users.length > 0 && (
+                  <div className="flex justify-center mt-6 pt-4">
+                    <button
+                      onClick={loadMoreUsers}
+                      disabled={loadingMoreUsers}
+                      className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {loadingMoreUsers && <Loader2 className="animate-spin" size={16} />}
+                      もっと見る
+                    </button>
+                  </div>
+                )}
               </div>
           )}
                     {/* --- Active Lending Mode --- */}

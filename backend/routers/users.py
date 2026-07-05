@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from .. import models, schemas
@@ -9,7 +9,7 @@ from ..auth import verify_admin
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 10000, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+def read_users(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     users = db.query(models.User).offset(skip).limit(limit).all()
     return users
 
@@ -101,7 +101,7 @@ def read_user_lending_logs(user_id: str, pin_code: str, db: Session = Depends(ge
     if user.pin_code != pin_code:
         raise HTTPException(status_code=401, detail="PINコードが間違っています")
 
-    logs = db.query(models.LendingLog).filter(models.LendingLog.user_id == user_id).all()
+    logs = db.query(models.LendingLog).options(joinedload(models.LendingLog.book)).filter(models.LendingLog.user_id == user_id).all()
 
     # Safely serialize — book may be null if the book record was deleted
     result = []
