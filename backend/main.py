@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from . import models
@@ -42,10 +42,10 @@ def read_root():
     return {"message": "Welcome to the Book Management System API"}
 
 @app.get("/api/cron/check-overdue")
-def trigger_overdue_check(cron_secret: str = Header(None, alias="X-Cron-Secret")):
+def trigger_overdue_check(background_tasks: BackgroundTasks, cron_secret: str = Header(None, alias="X-Cron-Secret")):
     expected_secret = os.environ.get("CRON_SECRET")
     if expected_secret and cron_secret != expected_secret:
         raise HTTPException(status_code=401, detail="Invalid CRON secret")
     
-    reminders.check_overdue_books()
-    return {"message": "Overdue check completed"}
+    background_tasks.add_task(reminders.check_overdue_books)
+    return {"message": "Overdue check started"}

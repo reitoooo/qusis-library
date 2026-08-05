@@ -24,6 +24,9 @@ def check_overdue_books():
         webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
         
         for log in logs:
+            if not log.due_date:
+                continue
+            
             days_overdue = (now.date() - log.due_date.date()).days
             user = db.query(User).filter(User.user_id == log.user_id).first()
             book = db.query(Book).filter(Book.id == log.book_id).first()
@@ -46,7 +49,7 @@ def check_overdue_books():
             elif days_overdue > 0: # Overdue
                 msg = f"【督促通知】{mention}返却期限が過ぎている本があります！（{days_overdue}日超過）\n至急部室へ返却してください。\n書名: {book.title}"
                 send_slack_webhook(msg, webhook_url)
-                log.remind_count += 1
+                log.remind_count = (log.remind_count or 0) + 1
                 db.commit()
                 import time
                 time.sleep(1.5)
