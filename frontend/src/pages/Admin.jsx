@@ -72,6 +72,40 @@ export default function Admin() {
     return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('ja-JP');
   };
 
+  const fetchLendingHistory = async () => {
+    setLoading(true);
+    try {
+      const res = await adminFetch(getApiUrl('/api/lending/history'));
+      const data = await res.json();
+      if(Array.isArray(data)) {
+        setLendingHistory(data);
+        setHasMoreHistory(data.length === LIMIT);
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMoreHistory = async () => {
+    if (loadingMoreHistory || !hasMoreHistory) return;
+    setLoadingMoreHistory(true);
+    try {
+      const skip = lendingHistory.length;
+      const res = await adminFetch(getApiUrl(`/api/lending/history?skip=${skip}`));
+      const data = await res.json();
+      if(Array.isArray(data)) {
+        setLendingHistory(prev => [...prev, ...data]);
+        setHasMoreHistory(data.length === LIMIT);
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoadingMoreHistory(false);
+    }
+  };
+
   const adminFetch = async (url, options = {}) => {
     const headers = {
       ...options.headers,
