@@ -55,10 +55,10 @@ def get_lending_history(skip: int = 0, limit: int = 50, db: Session = Depends(ge
             "book_id": log.book_id,
             "book_title": log.book.title if log.book else "不明",
             "book_author": log.book.author if log.book else "",
-            "borrowed_at": log.borrowed_at.isoformat(),
-            "due_date": log.due_date.isoformat(),
+            "borrowed_at": log.borrowed_at.isoformat() if log.borrowed_at else "",
+            "due_date": log.due_date.isoformat() if log.due_date else "",
             "returned_at": log.returned_at.isoformat() if log.returned_at else None,
-            "is_overdue": not log.returned_at and datetime.now() > log.due_date,
+            "is_overdue": not log.returned_at and log.due_date and datetime.now() > log.due_date,
             "is_extension_requested": log.is_extension_requested,
         })
 
