@@ -66,6 +66,12 @@ export default function Admin() {
     if (mode === 'lending_history') fetchLendingHistory();
   }, [mode]);
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('ja-JP');
+  };
+
   const adminFetch = async (url, options = {}) => {
     const headers = {
       ...options.headers,
@@ -865,11 +871,11 @@ export default function Admin() {
                               <div className="font-bold text-white">{log.book_title}</div>
                               {log.book_author && <div className="text-xs text-gray-500 mt-0.5">{log.book_author}</div>}
                             </td>
-                            <td className="p-4 text-gray-400 text-xs whitespace-nowrap">{new Date(log.borrowed_at).toLocaleDateString('ja-JP')}</td>
+                            <td className="p-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(log.borrowed_at)}</td>
                             <td className="p-4 text-xs whitespace-nowrap">
-                              <div className="text-gray-400">期限: {new Date(log.due_date).toLocaleDateString('ja-JP')}</div>
+                              <div className="text-gray-400">期限: {formatDate(log.due_date)}</div>
                               {log.returned_at && (
-                                <div className="text-green-400 font-bold mt-1">返却: {new Date(log.returned_at).toLocaleDateString('ja-JP')}</div>
+                                <div className="text-green-400 font-bold mt-1">返却: {formatDate(log.returned_at)}</div>
                               )}
                             </td>
                             <td className="p-4 text-center">
