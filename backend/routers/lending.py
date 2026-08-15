@@ -19,7 +19,7 @@ def get_active_lendings(db: Session = Depends(get_db), _: bool = Depends(verify_
         joinedload(models.LendingLog.book)
     ).filter(
         models.LendingLog.returned_at == None
-    ).all()
+    ).order_by(models.LendingLog.borrowed_at.desc()).all()
 
     result = []
     for log in logs:
@@ -41,10 +41,11 @@ def get_active_lendings(db: Session = Depends(get_db), _: bool = Depends(verify_
 @router.get("/history")
 def get_lending_history(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     """Return all lending logs, ordered by borrowed_at desc."""
+    from sqlalchemy import func
     logs = db.query(models.LendingLog).options(
         joinedload(models.LendingLog.user),
         joinedload(models.LendingLog.book)
-    ).order_by(models.LendingLog.borrowed_at.desc()).offset(skip).limit(limit).all()
+    ).order_by(func.coalesce(models.LendingLog.returned_at, models.LendingLog.borrowed_at).desc()).offset(skip).limit(limit).all()
 
     result = []
     for log in logs:
