@@ -334,7 +334,7 @@ export default function Admin() {
       const res = await adminFetch(getApiUrl(`/api/users/${editingUser.user_id}`), {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name: editingUser.name, pin_code: editingUser.pin_code, is_active: editingUser.is_active, notification_id: editingUser.notification_id || null })
+        body: JSON.stringify({ name: editingUser.name, pin_code: editingUser.pin_code, is_active: editingUser.is_active, notification_id: editingUser.notification_id || null, is_admin: editingUser.is_admin || false })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
       showMessage("ユーザー情報を更新しました");
