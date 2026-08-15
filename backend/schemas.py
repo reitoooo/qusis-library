@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from .models import BookStatus
+from .models import BookStatus, ReservationStatus
 
 class BookBase(BaseModel):
     isbn: str
@@ -9,6 +9,7 @@ class BookBase(BaseModel):
     author: str
     status: BookStatus = BookStatus.AVAILABLE
     location: Optional[str] = None
+    reservation_count: int = 0
 
 class BookCreate(BookBase):
     pass
@@ -80,3 +81,21 @@ class PinChange(BaseModel):
 
 class LendingExtend(BaseModel):
     pin_code: str
+
+class ReservationBase(BaseModel):
+    user_id: str
+    book_id: int
+
+class ReservationCreate(BaseModel):
+    user_id: str
+    pin_code: str
+    book_id: int
+
+class Reservation(ReservationBase):
+    id: int
+    reserved_at: datetime
+    status: ReservationStatus
+
+    class Config:
+        orm_mode = True
+        from_attributes = True

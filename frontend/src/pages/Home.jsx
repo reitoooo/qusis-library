@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../api';
-import { Search, ArrowUpCircle, ArrowDownCircle, Loader2, Zap } from 'lucide-react';
+import { Search, ArrowUpCircle, ArrowDownCircle, Loader2, Zap, BookmarkPlus } from 'lucide-react';
 
 export default function Home() {
   const [books, setBooks] = useState([]);
@@ -77,6 +77,15 @@ export default function Home() {
     navigate(`/return?${params.toString()}`);
   };
 
+  const goToReserve = (book) => {
+    const params = new URLSearchParams({
+      book_id: book.id,
+      book_title: book.title,
+      isbn: book.isbn || '',
+    });
+    navigate(`/reserve?${params.toString()}`);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="text-center space-y-3 pt-6 mb-12">
@@ -150,6 +159,12 @@ export default function Home() {
                       {book.status}
                     </span>
 
+                    {book.reservation_count > 0 && (
+                      <span className="inline-block px-2 py-1 rounded-full text-[10px] font-bold tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                        予約 {book.reservation_count}人
+                      </span>
+                    )}
+
                     {available ? (
                       <button
                         onClick={() => goToLend(book)}
@@ -160,14 +175,35 @@ export default function Home() {
                         借りる
                       </button>
                     ) : book.status === '貸出中' ? (
-                      <button
-                        onClick={() => goToReturn(book)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-gray-300 border border-white/10 rounded-full text-xs font-bold hover:bg-white/20 transition-all"
-                        title="この本を返却する"
-                      >
-                        <ArrowDownCircle size={13} />
-                        返す
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => goToReserve(book)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full text-xs font-bold hover:bg-purple-500 hover:text-white transition-all"
+                          title="この本を予約する"
+                        >
+                          <BookmarkPlus size={13} />
+                          予約する
+                        </button>
+                        <button
+                          onClick={() => goToReturn(book)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-gray-300 border border-white/10 rounded-full text-xs font-bold hover:bg-white/20 transition-all"
+                          title="この本を返却する"
+                        >
+                          <ArrowDownCircle size={13} />
+                          返す
+                        </button>
+                      </div>
+                    ) : book.status === '予約取り置き中' ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => goToLend(book)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full text-xs font-bold hover:bg-purple-500 hover:text-white transition-all"
+                          title="予約済みの本を借りる"
+                        >
+                          <ArrowUpCircle size={13} />
+                          借りる
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>

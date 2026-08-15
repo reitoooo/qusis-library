@@ -71,18 +71,29 @@ def lend_book(log: schemas.LendingLogCreate, db: Session = Depends(get_db)):
     if log.book_id:
         book = db.query(models.Book).filter(
             models.Book.id == log.book_id,
-            models.Book.status == models.BookStatus.AVAILABLE
+            models.Book.status.in_([models.BookStatus.AVAILABLE, models.BookStatus.RESERVED])
         ).first()
     elif log.book_isbn:
         book = db.query(models.Book).filter(
             models.Book.isbn == log.book_isbn,
-            models.Book.status == models.BookStatus.AVAILABLE
+            models.Book.status.in_([models.BookStatus.AVAILABLE, models.BookStatus.RESERVED])
         ).first()
     else:
         raise HTTPException(status_code=422, detail="book_id または book_isbn のどちらかを指定してください")
 
     if not book:
         raise HTTPException(status_code=404, detail="対象の本が見つからないか、全て貸出中です")
+        
+    # Check if reserved
+    if book.status == models.BookStatus.RESERVED:
+        first_reservation = db.query(models.Reservation).filter(
+            models.Reservation.book_id == book.id,
+            models.Reservation.status == models.ReservationStatus.ACTIVE
+        ).order_by(models.Reservation.reserved_at.asc()).first()
+        if not first_reservation or first_reservation.user_id != log.user_id:
+            raise HTTPException(status_code=400, detail="この本は他のユーザーに予約取り置きされています")
+        # Mark reservation as FULFILLED
+        first_reservation.status = models.ReservationStatus.FULFILLED
     
     # Check if user exists and is active
     user = db.query(models.User).filter(models.User.user_id == log.user_id).first()
@@ -142,7 +153,21 @@ def return_book(isbn: str = None, book_id: int = None, user_id: str = None, db: 
         
     book = db.query(models.Book).filter(models.Book.id == log.book_id).first()
     if book:
-        book.status = models.BookStatus.AVAILABLE
+        first_reservation = db.query(models.Reservation).filter(
+            models.Reservation.book_id == book.id,
+            models.Reservation.status == models.ReservationStatus.ACTIVE
+        ).order_by(models.Reservation.reserved_at.asc()).first()
+        
+        if first_reservation:
+            book.status = models.BookStatus.RESERVED
+            webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
+            if webhook_url:
+                reserver = first_reservation.user
+                user_mention = f"<@{reserver.notification_id}>" if reserver and reserver.notification_id else f"*{reserver.name}*"
+                msg = f"【予約本が返却されました】\n{user_mention} さん\n予約していた『{book.title}』が返却され、あなたのために取り置きされています！\n貸出処理を行ってください。"
+                send_slack_webhook(msg, webhook_url)
+        else:
+            book.status = models.BookStatus.AVAILABLE
         
     log.returned_at = datetime.now()
     db.commit()
@@ -165,6 +190,21 @@ def extend_lending(log_id: int, payload: schemas.LendingExtend, db: Session = De
 
     if log.is_extension_requested:
         raise HTTPException(status_code=400, detail="既に延長申請中です")
+
+    # Check for active reservations
+    first_reservation = db.query(models.Reservation).filter(
+        models.Reservation.book_id == log.book_id,
+        models.Reservation.status == models.ReservationStatus.ACTIVE
+    ).first()
+    
+    if first_reservation:
+        webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
+        if webhook_url:
+            user_mention = f"<@{user.notification_id}>" if user.notification_id else f"*{user.name}*"
+            book_title = log.book.title if log.book else "不明な本"
+            msg = f"【延長申請 自動却下】\n{user_mention} さん\n申し訳ありませんが、『{book_title}』には他のユーザーからの予約が入っているため、延長できません。\n元の期限（{log.due_date.strftime('%Y/%m/%d')}）までに返却をお願いします。"
+            send_slack_webhook(msg, webhook_url)
+        raise HTTPException(status_code=400, detail="この本は予約が入っているため延長できません")
 
     # 延長申請中フラグを立てる
     log.is_extension_requested = True

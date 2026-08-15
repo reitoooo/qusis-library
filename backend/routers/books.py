@@ -38,10 +38,25 @@ def fetch_book_info_google(isbn: str):
 
 @router.get("/", response_model=List[schemas.Book])
 def read_books(skip: int = 0, limit: int = 50, search: str = None, db: Session = Depends(get_db)):
-    query = db.query(models.Book)
+    from sqlalchemy import func
+    query = db.query(
+        models.Book,
+        func.count(models.Reservation.id).label("reservation_count")
+    ).outerjoin(
+        models.Reservation, 
+        (models.Reservation.book_id == models.Book.id) & (models.Reservation.status == models.ReservationStatus.ACTIVE)
+    )
+    
     if search:
         query = query.filter(models.Book.title.contains(search) | models.Book.author.contains(search))
-    books = query.order_by(models.Book.title, models.Book.id).offset(skip).limit(limit).all()
+        
+    results = query.group_by(models.Book.id).order_by(models.Book.title, models.Book.id).offset(skip).limit(limit).all()
+    
+    books = []
+    for book, res_count in results:
+        book.reservation_count = res_count
+        books.append(book)
+        
     return books
 
 @router.post("/", response_model=schemas.Book)

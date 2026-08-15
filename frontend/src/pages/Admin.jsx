@@ -10,9 +10,10 @@ export default function Admin() {
   
   const [users, setUsers] = useState([]);
   const [books, setBooks] = useState([]);
-  const [mode, setMode] = useState(''); // 'register_book', 'view_users', 'view_books', 'active_lending', 'lending_history'
+  const [mode, setMode] = useState(''); // 'register_book', 'view_users', 'view_books', 'active_lending', 'lending_history', 'reservations'
   const [activeLendings, setActiveLendings] = useState([]);
   const [lendingHistory, setLendingHistory] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -199,6 +200,22 @@ export default function Admin() {
       setActiveLendings(Array.isArray(data) ? data : []);
     } catch(e) {
       setError(`貸出状況の取得に失敗しました: ${e.message}`);
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReservations = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await adminFetch(getApiUrl('/api/reservations/all'));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `サーバーエラー (${res.status})`);
+      setReservations(Array.isArray(data) ? data : []);
+    } catch(e) {
+      setError(`予約状況の取得に失敗しました: ${e.message}`);
       console.error(e);
     } finally {
       setLoading(false);
@@ -596,6 +613,11 @@ export default function Admin() {
             <p className="text-gray-400 text-sm mb-6 flex-1">過去に貸し出された本の履歴をすべて確認します。</p>
             <button onClick={() => setMode('lending_history')} className="w-full py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors border border-white/10">履歴を表示</button>
           </div>
+          <div className="glass-panel p-6 rounded-2xl flex flex-col h-full">
+            <h2 className="font-bold text-xl text-white mb-2">予約一覧</h2>
+            <p className="text-gray-400 text-sm mb-6 flex-1">現在入っている予約の状況を確認します。</p>
+            <button onClick={() => { setMode('reservations'); fetchReservations(); }} className="w-full py-3 bg-purple-500/20 text-purple-400 font-bold rounded-xl hover:bg-purple-500 hover:text-white transition-colors border border-purple-500/30">予約を表示</button>
+          </div>
         </div>
       ) : (
         <div className="animate-in slide-in-from-right-4">
@@ -938,6 +960,67 @@ export default function Admin() {
                       </button>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* --- Reservations --- */}
+          {mode === 'reservations' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between bg-black/20 p-4 rounded-xl border border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <BookOpen size={20} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg text-white">予約一覧</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">現在入っている予約状況</p>
+                  </div>
+                </div>
+                <button onClick={fetchReservations} className="text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium">更新</button>
+              </div>
+              {loading && reservations.length === 0 ? (
+                <div className="glass-panel rounded-2xl p-12 flex justify-center"><Loader2 className="animate-spin text-purple-400" size={40}/></div>
+              ) : reservations.length === 0 ? (
+                <div className="glass-panel rounded-2xl p-12 text-center text-gray-500">予約はありません</div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="glass-panel rounded-2xl overflow-hidden overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[750px]">
+                      <thead className="bg-white/5 border-b border-white/10 text-gray-300">
+                        <tr>
+                          <th className="p-4">予約者</th>
+                          <th className="p-4">書籍タイトル</th>
+                          <th className="p-4">予約日時</th>
+                          <th className="p-4 text-center">状態</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-gray-300">
+                        {reservations.map(res => (
+                          <tr key={res.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                            <td className="p-4">
+                              <div className="font-bold text-white">{res.user?.name}</div>
+                              <div className="font-mono text-gray-400 text-xs mt-0.5">{res.user_id}</div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-white">{res.book?.title}</div>
+                            </td>
+                            <td className="p-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(res.reserved_at)}</td>
+                            <td className="p-4 text-center">
+                              {res.status === '予約中' ? (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">予約中</span>
+                              ) : res.status === '完了' ? (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-800 text-gray-400 border border-gray-700">完了</span>
+                              ) : (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">キャンセル</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

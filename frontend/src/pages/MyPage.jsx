@@ -7,6 +7,7 @@ export default function MyPage() {
   const [studentId, setStudentId] = useState('');
   const [pinCode, setPinCode] = useState('');
   const [logs, setLogs] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,13 +22,19 @@ export default function MyPage() {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(getApiUrl(`/api/users/${studentId.toUpperCase()}/lending-logs?pin_code=${pinCode}`));
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(Array.isArray(data) ? data : []);
+      const [resLogs, resReservations] = await Promise.all([
+        fetch(getApiUrl(`/api/users/${studentId.toUpperCase()}/lending-logs?pin_code=${pinCode}`)),
+        fetch(getApiUrl(`/api/reservations/me?user_id=${studentId.toUpperCase()}&pin_code=${pinCode}`))
+      ]);
+      
+      if (resLogs.ok && resReservations.ok) {
+        const dataLogs = await resLogs.json();
+        const dataRes = await resReservations.json();
+        setLogs(Array.isArray(dataLogs) ? dataLogs : []);
+        setReservations(Array.isArray(dataRes) ? dataRes : []);
         setSearched(true);
       } else {
-        const data = await res.json();
+        const data = await resLogs.json();
         throw new Error(data.detail || "エラーが発生しました");
       }
     } catch(err) {
@@ -82,6 +89,33 @@ export default function MyPage() {
       setPinCode(newPin);
       setNewPin('');
       setShowPinChange(false);
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async (reservationId) => {
+    if (!window.confirm("この予約をキャンセルしますか？")) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const res = await fetch(getApiUrl(`/api/reservations/${reservationId}/cancel`), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'user-id': studentId.toUpperCase()
+        },
+        body: JSON.stringify({ pin_code: pinCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "キャンセルに失敗しました");
+      
+      setSuccess("予約をキャンセルしました");
+      setReservations(reservations.filter(r => r.id !== reservationId));
     } catch(err) {
       setError(err.message);
     } finally {
@@ -202,6 +236,48 @@ export default function MyPage() {
                           )}
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {searched && (
+        <div className="glass-panel p-6 rounded-2xl">
+          <h2 className="font-bold text-xl text-white mb-6">予約状況</h2>
+          {reservations.length === 0 ? (
+            <p className="text-gray-500 text-center py-8 font-medium">現在予約中の本はありません</p>
+          ) : (
+            <div className="space-y-4">
+              {reservations.map(res => (
+                <div key={res.id} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div>
+                      {res.book ? (
+                        <p className="font-bold text-white mb-1">『{res.book.title}』 <span className="font-mono text-xs text-gray-400 font-normal ml-2">({res.book.isbn})</span></p>
+                      ) : (
+                        <p className="font-bold text-gray-500 mb-1 italic">(削除済みの本) <span className="font-mono text-xs font-normal ml-2">ID: {res.book_id}</span></p>
+                      )}
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-400">
+                        <p>予約日: {new Date(res.reserved_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="inline-flex items-center px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-xs font-bold">
+                          予約中
+                        </span>
+                        <button 
+                          onClick={() => handleCancelReservation(res.id)}
+                          disabled={loading}
+                          className="text-xs px-3 py-1.5 bg-gray-500/20 text-gray-400 border border-gray-500/30 rounded-lg hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors disabled:opacity-50"
+                        >
+                          キャンセルする
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

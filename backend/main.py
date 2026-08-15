@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from . import models
 from .database import engine
-from .routers import books, users, lending
+from .routers import books, users, lending, reservations
 
 from .services import reminders
 
@@ -51,6 +51,7 @@ app.add_middleware(
 app.include_router(books.router)
 app.include_router(users.router)
 app.include_router(lending.router)
+app.include_router(reservations.router)
 
 @app.get("/")
 def read_root():

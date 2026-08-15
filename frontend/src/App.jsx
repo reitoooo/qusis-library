@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Lend from './pages/Lend';
+import Reserve from './pages/Reserve';
 import Return from './pages/Return';
 import MyPage from './pages/MyPage';
 import Admin from './pages/Admin';
@@ -27,6 +28,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/lend" element={<Lend />} />
+            <Route path="/reserve" element={<Reserve />} />
             <Route path="/return" element={<Return />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/admin" element={<Admin />} />

@@ -6,6 +6,7 @@ from .database import Base
 class BookStatus(str, enum.Enum):
     AVAILABLE = "貸出可能"
     LENT = "貸出中"
+    RESERVED = "予約取り置き中"
     DISCARDED = "廃棄"
     LOST = "紛失"
 
@@ -47,3 +48,20 @@ class LendingLog(Base):
 
     book = relationship("Book", back_populates="lending_logs")
     user = relationship("User", back_populates="lending_logs")
+
+class ReservationStatus(str, enum.Enum):
+    ACTIVE = "予約中"
+    FULFILLED = "完了"
+    CANCELLED = "キャンセル"
+
+class Reservation(Base):
+    __tablename__ = "reservations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    book_id = Column(Integer, ForeignKey("books.id"))
+    user_id = Column(String, ForeignKey("users.user_id"))
+    reserved_at = Column(DateTime)
+    status = Column(Enum(ReservationStatus), default=ReservationStatus.ACTIVE)
+
+    book = relationship("Book")
+    user = relationship("User")
