@@ -38,6 +38,31 @@ export default function MyPage() {
     }
   };
 
+  const handleExtend = async (logId) => {
+    if (!window.confirm("貸出期間の延長を申請しますか？")) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const res = await fetch(getApiUrl(`/api/lending/${logId}/extend`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin_code: pinCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "申請に失敗しました");
+      
+      setSuccess("延長申請を送信しました");
+      // 更新後のデータでlogsを上書き
+      setLogs(logs.map(log => log.id === logId ? data : log));
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleChangePin = async (e) => {
     e.preventDefault();
     if (newPin.length !== 4) return setError("新しいPINは4桁の数字にしてください");
@@ -158,9 +183,24 @@ export default function MyPage() {
                           返却済 ({new Date(log.returned_at).toLocaleDateString()})
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-xs font-bold">
-                          貸出中
-                        </span>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="inline-flex items-center px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-xs font-bold">
+                            貸出中
+                          </span>
+                          {log.is_extension_requested ? (
+                            <span className="text-xs px-3 py-1.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-lg font-medium">
+                              延長申請中
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={() => handleExtend(log.id)}
+                              disabled={loading}
+                              className="text-xs px-3 py-1.5 bg-primary/20 text-primary border border-primary/30 rounded-lg hover:bg-primary/30 transition-colors disabled:opacity-50"
+                            >
+                              延長する
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

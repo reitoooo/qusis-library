@@ -29,6 +29,7 @@ class User(Base):
     pin_code = Column(String, default="0000")
     notification_id = Column(String, nullable=True) # Discord/Slack ID
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
 
     lending_logs = relationship("LendingLog", back_populates="user")
 
@@ -42,6 +43,7 @@ class LendingLog(Base):
     due_date = Column(DateTime)
     returned_at = Column(DateTime, nullable=True)
     remind_count = Column(Integer, default=0)
+    is_extension_requested = Column(Boolean, default=False)
 
     book = relationship("Book", back_populates="lending_logs")
     user = relationship("User", back_populates="lending_logs")

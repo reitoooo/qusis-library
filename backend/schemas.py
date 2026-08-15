@@ -31,6 +31,7 @@ class UserBase(BaseModel):
     pin_code: Optional[str] = "0000"
     notification_id: Optional[str] = None
     is_active: bool = True
+    is_admin: bool = False
 
 class UserCreate(UserBase):
     pass
@@ -40,6 +41,7 @@ class UserUpdate(BaseModel):
     pin_code: Optional[str] = None
     notification_id: Optional[str] = None
     is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
 
 class User(UserBase):
     class Config:
@@ -62,6 +64,7 @@ class LendingLog(LendingLogBase):
     due_date: datetime
     returned_at: Optional[datetime] = None
     remind_count: int
+    is_extension_requested: bool = False
     book: Book
 
     class Config:
@@ -74,3 +77,6 @@ class PinVerify(BaseModel):
 class PinChange(BaseModel):
     old_pin: str
     new_pin: str
+
+class LendingExtend(BaseModel):
+    pin_code: str

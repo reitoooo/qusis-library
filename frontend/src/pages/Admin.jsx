@@ -10,16 +10,19 @@ export default function Admin() {
   
   const [users, setUsers] = useState([]);
   const [books, setBooks] = useState([]);
-  const [mode, setMode] = useState(''); // 'register_book', 'view_users', 'view_books', 'active_lending'
+  const [mode, setMode] = useState(''); // 'register_book', 'view_users', 'view_books', 'active_lending', 'lending_history'
   const [activeLendings, setActiveLendings] = useState([]);
+  const [lendingHistory, setLendingHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [hasMoreBooks, setHasMoreBooks] = useState(true);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
   const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
   const [loadingMoreBooks, setLoadingMoreBooks] = useState(false);
+  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
   const LIMIT = 50;  
   // Create user form
   const [newUserId, setNewUserId] = useState('');
@@ -60,6 +63,7 @@ export default function Admin() {
     if (mode === 'view_users') fetchUsers();
     if (mode === 'view_books') fetchBooks();
     if (mode === 'active_lending') fetchActiveLendings();
+    if (mode === 'lending_history') fetchLendingHistory();
   }, [mode]);
 
   const adminFetch = async (url, options = {}) => {
@@ -451,6 +455,34 @@ export default function Admin() {
     }
   };
 
+  const handleApproveExtension = async (logId) => {
+    if (!window.confirm("延長申請を許可しますか？")) return;
+    setLoading(true);
+    try {
+      const res = await adminFetch(getApiUrl(`/api/lending/${logId}/approve-extension`), { method: 'POST' });
+      if (!res.ok) throw new Error("承認に失敗しました");
+      setSuccess("延長申請を許可しました");
+      fetchActiveLendings();
+    } catch(err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleRejectExtension = async (logId) => {
+    if (!window.confirm("延長申請を却下しますか？")) return;
+    setLoading(true);
+    try {
+      const res = await adminFetch(getApiUrl(`/api/lending/${logId}/reject-extension`), { method: 'POST' });
+      if (!res.ok) throw new Error("却下に失敗しました");
+      setSuccess("延長申請を却下しました");
+      fetchActiveLendings();
+    } catch(err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   if (!authenticated) {
     return (
       <div className="max-w-md mx-auto mt-10 p-8 glass-panel rounded-2xl animate-in fade-in zoom-in-95">
@@ -514,10 +546,15 @@ export default function Admin() {
             <p className="text-gray-400 text-sm mb-6">部員名簿の登録や一覧表示、情報の修正や削除を行います。</p>
             <button onClick={() => setMode('view_users')} className="w-full py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors border border-white/10">一覧を表示</button>
           </div>
-          <div className="glass-panel p-6 rounded-2xl">
+          <div className="glass-panel p-6 rounded-2xl flex flex-col h-full">
             <h2 className="font-bold text-xl text-white mb-2 flex items-center gap-2"><BookOpen size={20} className="text-primary" />貸出状況</h2>
-            <p className="text-gray-400 text-sm mb-6">現在誰がどの本を借りているか、返却期限の状況を確認します。</p>
+            <p className="text-gray-400 text-sm mb-6 flex-1">現在誰がどの本を借りているか、返却期限の状況を確認します。</p>
             <button onClick={() => setMode('active_lending')} className="w-full py-3 bg-primary/20 text-primary font-bold rounded-xl hover:bg-primary/30 transition-colors border border-primary/30">貸出中の本を確認</button>
+          </div>
+          <div className="glass-panel p-6 rounded-2xl flex flex-col h-full">
+            <h2 className="font-bold text-xl text-white mb-2">全貸出履歴</h2>
+            <p className="text-gray-400 text-sm mb-6 flex-1">過去に貸し出された本の履歴をすべて確認します。</p>
+            <button onClick={() => setMode('lending_history')} className="w-full py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors border border-white/10">履歴を表示</button>
           </div>
         </div>
       ) : (
@@ -694,9 +731,16 @@ export default function Admin() {
                           <td className="p-4 font-bold text-white">{u.name}</td>
                           <td className="p-4 text-gray-400 font-mono text-xs">{u.notification_id || '-'}</td>
                           <td className="p-4">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${u.is_active ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                              {u.is_active ? '有効' : '停止'}
-                            </span>
+                            <div className="flex gap-2 items-center">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${u.is_active ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                {u.is_active ? '有効' : '停止'}
+                              </span>
+                              {u.is_admin && (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                  管理者
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-4 flex justify-center gap-3">
                             <button onClick={() => setEditingUser(u)} className="p-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors"><Edit2 size={16}/></button>
@@ -761,15 +805,99 @@ export default function Admin() {
                             {new Date(log.due_date).toLocaleDateString('ja-JP')}
                           </td>
                           <td className="p-4 text-center">
-                            {log.is_overdue
-                              ? <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">延滞中</span>
-                              : <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">貸出中</span>
-                            }
+                            <div className="flex flex-col items-center gap-2">
+                              {log.is_extension_requested && (
+                                <div className="flex flex-col items-center gap-1 bg-yellow-500/10 p-2 rounded-xl border border-yellow-500/20">
+                                  <span className="text-xs font-bold text-yellow-400 mb-1">延長申請あり</span>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => handleApproveExtension(log.id)} className="text-[10px] px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors font-bold">許可</button>
+                                    <button onClick={() => handleRejectExtension(log.id)} className="text-[10px] px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors font-bold">却下</button>
+                                  </div>
+                                </div>
+                              )}
+                              {log.is_overdue
+                                ? <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">延滞中</span>
+                                : <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">貸出中</span>
+                              }
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* --- Lending History Mode --- */}
+          {mode === 'lending_history' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-xl text-white">全貸出履歴</h2>
+                <button onClick={fetchLendingHistory} className="text-sm text-primary hover:text-primary-hover transition-colors font-medium">更新</button>
+              </div>
+              {loading && lendingHistory.length === 0 ? (
+                <div className="glass-panel rounded-2xl p-12 flex justify-center"><Loader2 className="animate-spin text-primary" size={40}/></div>
+              ) : lendingHistory.length === 0 ? (
+                <div className="glass-panel rounded-2xl p-12 text-center text-gray-500">貸出履歴はありません</div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="glass-panel rounded-2xl overflow-hidden overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[750px]">
+                      <thead className="bg-white/5 border-b border-white/10 text-gray-300">
+                        <tr>
+                          <th className="p-4">借りた人</th>
+                          <th className="p-4">書籍タイトル</th>
+                          <th className="p-4">貸出日</th>
+                          <th className="p-4">期限 / 返却日</th>
+                          <th className="p-4 text-center">状態</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-gray-300">
+                        {lendingHistory.map(log => (
+                          <tr key={log.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                            <td className="p-4">
+                              <div className="font-bold text-white">{log.user_name}</div>
+                              <div className="font-mono text-gray-400 text-xs mt-0.5">{log.user_id}</div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-white">{log.book_title}</div>
+                              {log.book_author && <div className="text-xs text-gray-500 mt-0.5">{log.book_author}</div>}
+                            </td>
+                            <td className="p-4 text-gray-400 text-xs whitespace-nowrap">{new Date(log.borrowed_at).toLocaleDateString('ja-JP')}</td>
+                            <td className="p-4 text-xs whitespace-nowrap">
+                              <div className="text-gray-400">期限: {new Date(log.due_date).toLocaleDateString('ja-JP')}</div>
+                              {log.returned_at && (
+                                <div className="text-green-400 font-bold mt-1">返却: {new Date(log.returned_at).toLocaleDateString('ja-JP')}</div>
+                              )}
+                            </td>
+                            <td className="p-4 text-center">
+                              {log.returned_at ? (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-800 text-gray-400 border border-gray-700">返却済</span>
+                              ) : log.is_overdue ? (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">延滞中</span>
+                              ) : (
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">貸出中</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {!loading && hasMoreHistory && lendingHistory.length > 0 && (
+                    <div className="flex justify-center mt-6 pt-4">
+                      <button
+                        onClick={loadMoreHistory}
+                        disabled={loadingMoreHistory}
+                        className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {loadingMoreHistory && <Loader2 className="animate-spin" size={16} />}
+                        もっと見る
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -803,6 +931,10 @@ export default function Admin() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
                 <input type="checkbox" id="active" checked={editingUser.is_active} onChange={e=>setEditingUser({...editingUser, is_active: e.target.checked})} className="w-5 h-5 rounded text-primary focus:ring-primary bg-black/50 border-white/20"/>
                 <label htmlFor="active" className="text-sm font-bold text-white cursor-pointer">アカウントを有効にする</label>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-purple-500/5 rounded-xl border border-purple-500/10">
+                <input type="checkbox" id="admin" checked={editingUser.is_admin || false} onChange={e=>setEditingUser({...editingUser, is_admin: e.target.checked})} className="w-5 h-5 rounded text-purple-400 focus:ring-purple-400 bg-black/50 border-white/20"/>
+                <label htmlFor="admin" className="text-sm font-bold text-purple-400 cursor-pointer">管理者権限を付与する</label>
               </div>
               <button type="submit" className="w-full py-3 mt-2 bg-primary text-gray-900 font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-[0_0_15px_rgba(108,210,209,0.2)]">保存する</button>
             </form>
