@@ -9,6 +9,21 @@ from .services import reminders
 
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-migration for new columns
+from sqlalchemy import text
+try:
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("ALTER TABLE lending_logs ADD COLUMN is_extension_requested BOOLEAN DEFAULT false;"))
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false;"))
+        except Exception:
+            pass
+except Exception as e:
+    print("Migration skipped or failed:", e)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
