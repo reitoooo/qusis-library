@@ -30,10 +30,8 @@ export default function Scanner({ onScan, onError }) {
               if (isScanningRef.current) return;
               isScanningRef.current = true;
               
-              // スキャン成功時に自動で止める
-              html5QrCode.stop().then(() => {
-                onScan(decodedText);
-              }).catch(console.error);
+              // 読み取り直後に即座にAPIを叩く。カメラ停止はReactのアンマウント処理(cleanup)に任せる
+              onScan(decodedText);
             }
           },
           (errorMessage) => {
