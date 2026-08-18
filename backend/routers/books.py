@@ -79,10 +79,16 @@ def create_book(book: schemas.BookCreate, db: Session = Depends(get_db), _: bool
         else:
             raise HTTPException(status_code=404, detail="Book info not found in external APIs. Please provide title and author manually.")
             
-    db_item = models.Book(**book.model_dump())
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
+    try:
+        db_item = models.Book(**book.model_dump())
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+    except TypeError as e:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"TypeError in models.Book: {e}. type: {type(book).__name__}, dump: {book.model_dump()}"
+        )
     return db_item
 
 @router.get("/{isbn}", response_model=schemas.Book)

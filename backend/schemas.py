@@ -9,7 +9,6 @@ class BookBase(BaseModel):
     author: str
     status: BookStatus = BookStatus.AVAILABLE
     location: Optional[str] = None
-    reservation_count: int = 0
 
 class BookCreate(BookBase):
     pass
@@ -22,6 +21,7 @@ class BookUpdate(BaseModel):
 
 class Book(BookBase):
     id: int
+    reservation_count: int = 0
     class Config:
         orm_mode = True
         from_attributes = True
