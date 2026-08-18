@@ -11,29 +11,35 @@ router = APIRouter(prefix="/books", tags=["books"])
 
 def fetch_book_info_openbd(isbn: str):
     url = f"https://api.openbd.jp/v1/get?isbn={isbn}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        if data and data[0]:
-            summary = data[0].get("summary", {})
-            return {
-                "title": summary.get("title", ""),
-                "author": summary.get("author", "")
-            }
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data and data[0]:
+                summary = data[0].get("summary", {})
+                return {
+                    "title": summary.get("title", ""),
+                    "author": summary.get("author", "")
+                }
+    except Exception as e:
+        print(f"OpenBD fetch error: {e}")
     return None
 
 def fetch_book_info_google(isbn: str):
     url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        if "items" in data and len(data["items"]) > 0:
-            volume_info = data["items"][0].get("volumeInfo", {})
-            authors = volume_info.get("authors", [])
-            return {
-                "title": volume_info.get("title", ""),
-                "author": ", ".join(authors) if authors else ""
-            }
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if "items" in data and len(data["items"]) > 0:
+                volume_info = data["items"][0].get("volumeInfo", {})
+                authors = volume_info.get("authors", [])
+                return {
+                    "title": volume_info.get("title", ""),
+                    "author": ", ".join(authors) if authors else ""
+                }
+    except Exception as e:
+        print(f"Google Books fetch error: {e}")
     return None
 
 @router.get("/", response_model=List[schemas.Book])
