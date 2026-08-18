@@ -21,6 +21,10 @@ try:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false;"))
         except Exception:
             pass
+        try:
+            conn.execute(text("ALTER TYPE bookstatus ADD VALUE 'RESERVED';"))
+        except Exception:
+            pass
 except Exception as e:
     print("Migration skipped or failed:", e)
 
