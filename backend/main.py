@@ -60,6 +60,18 @@ app.include_router(reservations.router)
 def read_root():
     return {"message": "Welcome to the Book Management System API"}
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"サーバーエラー: {str(exc)}"},
+    )
+
 @app.get("/api/cron/check-overdue")
 def trigger_overdue_check(background_tasks: BackgroundTasks, cron_secret: str = Header(None, alias="X-Cron-Secret")):
     expected_secret = os.environ.get("CRON_SECRET")
