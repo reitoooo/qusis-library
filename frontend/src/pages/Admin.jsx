@@ -449,7 +449,7 @@ export default function Admin() {
         const errData = await res.json();
         if (res.status === 404) {
           setManualIsbn(isbn);
-          throw new Error("自動取得に失敗しました。右側のフォームから手動で登録してください。");
+          throw new Error("外部データベースにこの本の情報が見つかりませんでした。右側のフォームから手動で登録してください。");
         }
         throw new Error(errData.detail || "登録に失敗しました");
       }
