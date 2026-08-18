@@ -74,9 +74,19 @@ import traceback
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     traceback.print_exc()
+    
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Methods"] = "*"
+        headers["Access-Control-Allow-Headers"] = "*"
+        
     return JSONResponse(
         status_code=500,
         content={"detail": f"サーバーエラー: {str(exc)}"},
+        headers=headers
     )
 
 @app.get("/api/cron/check-overdue")
