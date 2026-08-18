@@ -37,6 +37,9 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 origins = [
     "http://localhost",
     "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173",
     FRONTEND_URL
 ]
 
