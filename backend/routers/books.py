@@ -50,7 +50,7 @@ def read_books(skip: int = 0, limit: int = 50, search: str = None, db: Session =
     if search:
         query = query.filter(models.Book.title.contains(search) | models.Book.author.contains(search))
         
-    results = query.group_by(models.Book.id).order_by(models.Book.title, models.Book.id).offset(skip).limit(limit).all()
+    results = query.group_by(models.Book.id).order_by(models.Book.id).offset(skip).limit(limit).all()
     
     books = []
     for book, res_count in results:

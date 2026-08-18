@@ -121,6 +121,7 @@ def read_user_lending_logs(user_id: str, pin_code: str, db: Session = Depends(ge
             "due_date": log.due_date.isoformat(),
             "returned_at": log.returned_at.isoformat() if log.returned_at else None,
             "remind_count": log.remind_count,
+            "is_extension_requested": log.is_extension_requested,
         })
     return result
 

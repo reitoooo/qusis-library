@@ -7,7 +7,7 @@ from typing import List
 from .. import models, schemas
 from ..database import get_db
 
-router = APIRouter(prefix="/api/reservations", tags=["reservations"])
+router = APIRouter(prefix="/reservations", tags=["reservations"])
 
 @router.post("/", response_model=schemas.Reservation)
 def create_reservation(payload: schemas.ReservationCreate, db: Session = Depends(get_db)):
