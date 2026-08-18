@@ -21,6 +21,9 @@ try:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false;"))
         except Exception:
             pass
+
+    # ALTER TYPE cannot run inside a transaction block, so use autocommit connection
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
         try:
             conn.execute(text("ALTER TYPE bookstatus ADD VALUE 'RESERVED';"))
         except Exception:
