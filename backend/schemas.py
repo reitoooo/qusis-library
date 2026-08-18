@@ -95,6 +95,8 @@ class Reservation(ReservationBase):
     id: int
     reserved_at: datetime
     status: ReservationStatus
+    book: Optional[Book] = None
+    user: Optional[User] = None
 
     class Config:
         orm_mode = True

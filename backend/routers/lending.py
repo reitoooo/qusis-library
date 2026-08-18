@@ -119,6 +119,10 @@ def lend_book(log: schemas.LendingLogCreate, db: Session = Depends(get_db)):
     db.add(db_log)
     db.commit()
     db.refresh(db_log)
+    # Eager-load the book relationship for the response schema
+    db_log = db.query(models.LendingLog).options(
+        joinedload(models.LendingLog.book)
+    ).filter(models.LendingLog.id == db_log.id).first()
     return db_log
 
 @router.post("/return")
@@ -176,7 +180,9 @@ def return_book(isbn: str = None, book_id: int = None, user_id: str = None, db: 
 
 @router.post("/{log_id}/extend", response_model=schemas.LendingLog)
 def extend_lending(log_id: int, payload: schemas.LendingExtend, db: Session = Depends(get_db)):
-    log = db.query(models.LendingLog).filter(models.LendingLog.id == log_id).first()
+    log = db.query(models.LendingLog).options(
+        joinedload(models.LendingLog.book)
+    ).filter(models.LendingLog.id == log_id).first()
     if not log:
         raise HTTPException(status_code=404, detail="貸出記録が見つかりません")
     if log.returned_at:
@@ -226,7 +232,9 @@ def extend_lending(log_id: int, payload: schemas.LendingExtend, db: Session = De
 
 @router.post("/{log_id}/approve-extension", response_model=schemas.LendingLog)
 def approve_extension(log_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    log = db.query(models.LendingLog).filter(models.LendingLog.id == log_id).first()
+    log = db.query(models.LendingLog).options(
+        joinedload(models.LendingLog.book)
+    ).filter(models.LendingLog.id == log_id).first()
     if not log:
         raise HTTPException(status_code=404, detail="貸出記録が見つかりません")
     if not log.is_extension_requested:
@@ -252,7 +260,9 @@ def approve_extension(log_id: int, db: Session = Depends(get_db), _: bool = Depe
 
 @router.post("/{log_id}/reject-extension", response_model=schemas.LendingLog)
 def reject_extension(log_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    log = db.query(models.LendingLog).filter(models.LendingLog.id == log_id).first()
+    log = db.query(models.LendingLog).options(
+        joinedload(models.LendingLog.book)
+    ).filter(models.LendingLog.id == log_id).first()
     if not log:
         raise HTTPException(status_code=404, detail="貸出記録が見つかりません")
     if not log.is_extension_requested:
